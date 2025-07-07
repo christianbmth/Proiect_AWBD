@@ -16,10 +16,6 @@ import org.springframework.data.domain.Pageable;   // ← import adăugat
 import ro.fcdynamis.club.entity.Staff;
 import ro.fcdynamis.club.repository.StaffRepository;
 
-import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;          // ← pentru consistență
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;

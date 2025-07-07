@@ -1,8 +1,14 @@
 package ro.fcdynamis.club.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import java.util.List;
 
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.PropertyGenerator.class,
+    property = "idAntrenor"
+)
 @Entity
 @Table(name = "antrenori")
 public class Antrenor {
@@ -17,8 +23,6 @@ public class Antrenor {
 
     @OneToMany(mappedBy = "antrenor", cascade = CascadeType.ALL)
     private List<Jucator> jucatori;
-
-    // Constructori, getteri, setteri
 
     public Antrenor() {}
 
