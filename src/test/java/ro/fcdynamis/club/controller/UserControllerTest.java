@@ -1,63 +1,68 @@
+// src/test/java/ro/fcdynamis/club/controller/UserControllerTest.java
 package ro.fcdynamis.club.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
-import org.springframework.data.domain.*;
-import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-
-import ro.fcdynamis.club.entity.User;
+import org.springframework.http.MediaType;
 import ro.fcdynamis.club.entity.Staff;
+import ro.fcdynamis.club.entity.User;
+import ro.fcdynamis.club.controller.UserController;
 import ro.fcdynamis.club.repository.UserRepository;
 
-import java.util.List;
+import java.util.Optional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = UserController.class)
-class UserControllerTest {
+@WebMvcTest(UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
+public class UserControllerTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvc mvc;
 
     @MockBean
-    private UserRepository userRepository;
+    private UserRepository repo;
+
+    @Autowired
+    private ObjectMapper json;
 
     @Test
-    @DisplayName("GET /api/useri returns paged list of users")
-    void testGetAllUsersPaged() throws Exception {
-        // Staff doar cu nume și funcție
-        Staff st = new Staff("Ion","Popescu", "Manager");
-        st.setIdStaff(7L);
+    @DisplayName("GET /api/useri/{id} găsește un user existent")
+    void testGetById() throws Exception {
+        Staff s = new Staff("Ion","Pop","Antrenor");
+        User u = new User(s, "ion.pop@example.com", "pwd");
+        when(repo.findById(3L)).thenReturn(Optional.of(u));
 
-        User u1 = new User(st, "u1@x.ro", "pass1");
-        u1.setIdUser(1L);
-        User u2 = new User(null, "u2@x.ro", "pass2");
-        u2.setIdUser(2L);
+        mvc.perform(get("/api/useri/3"))
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("$.username").value("ion.pop@example.com"));
+    }
 
-        Pageable pageable = PageRequest.of(0, 5, Sort.by("username").ascending());
-        Page<User> page = new PageImpl<>(List.of(u1, u2), pageable, 2);
+    @Test
+    @DisplayName("PUT /api/useri/{id} actualizează user")
+    void testUpdate() throws Exception {
+        Staff s = new Staff("Ion","Pop","Antrenor");
+        User existing = new User(s, "old@example.com", "pwd");
+        when(repo.findById(7L)).thenReturn(Optional.of(existing));
+        when(repo.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-        Mockito.when(userRepository.findAll(Mockito.any(Pageable.class)))
-               .thenReturn(page);
-
-        mockMvc.perform(get("/api/useri")
-                .param("page", "0")
-                .param("size", "5")
-                .param("sort", "username,asc")
-                .accept(MediaType.APPLICATION_JSON)
-            )
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content.length()").value(2))
-            .andExpect(jsonPath("$.content[0].username").value("u1@x.ro"))
-            .andExpect(jsonPath("$.totalElements").value(2))
-            .andExpect(jsonPath("$.number").value(0));
+        User upd = new User(s, "nou@example.com", "pwd2");
+        mvc.perform(put("/api/useri/7")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(upd)))
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("$.username").value("nou@example.com"));
     }
 }
